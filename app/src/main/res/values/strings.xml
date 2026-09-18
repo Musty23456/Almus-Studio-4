@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Almus Studio</string>
+    <string name="home_title">Almus Studio</string>
+    <string name="home_recent_projects">Recent Projects</string>
+    <string name="home_new_project">New Project</string>
+    <string name="new_project_name_hint">Project name</string>
+    <string name="new_project_bpm_hint">BPM</string>
+    <string name="new_project_create">Create</string>
+    <string name="permission_mic_rationale">Almus Studio needs microphone access to record audio into your tracks. Nothing is ever sent off this device.</string>
+    <string name="permission_mic_denied">Microphone access was denied. You can still edit and mix imported audio, but recording is disabled until permission is granted.</string>
+    <string name="track_mute">Mute</string>
+    <string name="track_solo">Solo</string>
+    <string name="track_arm">Arm</string>
+    <string name="transport_record">Record</string>
+    <string name="transport_play">Play</string>
+    <string name="transport_pause">Pause</string>
+    <string name="transport_stop">Stop</string>
+</resources>

@@ -1,0 +1,19 @@
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Never commit signing material
+app/release.keystore
+*.jks
+*.keystore
+
+# Gradle wrapper jar is regenerated locally via `gradle wrapper`; see README
+gradle/wrapper/gradle-wrapper.jar

@@ -1,0 +1,79 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # GitHub-hosted ubuntu-latest runners already ship with an Android SDK
+      # (ANDROID_HOME is preset) — the third-party android-actions/setup-android
+      # step was dropped here because it has been unreliable; we only need to
+      # accept licenses and install the NDK/CMake versions this project pins.
+      - name: Accept SDK licenses and install NDK/CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;26.1.10909125" "cmake;3.22.1" "platforms;android-34"
+
+      # Provisions a matching Gradle version and caches it + the module cache
+      # between runs, without depending on a committed gradle-wrapper.jar.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Run unit tests
+        run: gradle test --stacktrace
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Build release APK (unsigned, only if keystore secrets are present)
+        if: ${{ env.ALMUS_RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          ALMUS_RELEASE_KEYSTORE_BASE64: ${{ secrets.ALMUS_RELEASE_KEYSTORE_BASE64 }}
+          ALMUS_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ALMUS_RELEASE_KEYSTORE_PASSWORD }}
+          ALMUS_RELEASE_KEY_ALIAS: ${{ secrets.ALMUS_RELEASE_KEY_ALIAS }}
+          ALMUS_RELEASE_KEY_PASSWORD: ${{ secrets.ALMUS_RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "$ALMUS_RELEASE_KEYSTORE_BASE64" | base64 -d > app/release.keystore
+          gradle assembleRelease --stacktrace
+
+      - name: Upload debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: almus-studio-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        if: ${{ env.ALMUS_RELEASE_KEYSTORE_BASE64 != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: almus-studio-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: ignore
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
